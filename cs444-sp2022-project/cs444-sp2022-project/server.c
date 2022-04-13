@@ -232,6 +232,17 @@ void load_all_sessions() {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
     //       Don't forget to load all of sessions on the disk.
+
+    for(int i = 0; i < NUM_SESSIONS; i++){
+        // printf("session_id: %d\n", browser_list[i].session_id);
+        // char path[BUFFER_LEN];
+        // get_session_file_path(i, path);
+        // printf("path: %s", path);
+        if (session_list[i].in_use){
+            printf("OH SHIT HERE IS SOME TEXT");
+            // printf(browser_list[i].socket_fd);
+        }
+    }
 }
 
 /**
@@ -242,6 +253,18 @@ void load_all_sessions() {
 void save_session(int session_id) {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
+    if (session_list[session_id].in_use){
+        char path[BUFFER_LEN];
+        char result[BUFFER_LEN];
+        printf("PATH HERE\n");
+        get_session_file_path(session_id, path);
+        printf("path: %s \n", path);
+        FILE *out = fopen(path, "w");
+        session_to_str(session_id, result);
+        fputs(result, out);
+        fclose(out);
+        printf("result: %s\n", result);
+    }
 }
 
 /**
@@ -335,6 +358,7 @@ void browser_handler(int browser_socket_fd) {
         broadcast(session_id, response);
 
         save_session(session_id);
+        printf("session saved\n");
     }
 }
 
