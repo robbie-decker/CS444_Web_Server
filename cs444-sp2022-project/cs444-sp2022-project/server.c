@@ -233,14 +233,18 @@ void load_all_sessions() {
     // Hint: Use get_session_file_path() to get the file path for each session.
     //       Don't forget to load all of sessions on the disk.
 
+    // i is like our session_id in this case
     for(int i = 0; i < NUM_SESSIONS; i++){
-        // printf("session_id: %d\n", browser_list[i].session_id);
-        // char path[BUFFER_LEN];
-        // get_session_file_path(i, path);
-        // printf("path: %s", path);
-        if (session_list[i].in_use){
-            printf("OH SHIT HERE IS SOME TEXT");
-            // printf(browser_list[i].socket_fd);
+        char path[BUFFER_LEN];
+        char file_content[BUFFER_LEN];
+        get_session_file_path(i, path);
+        FILE *in = fopen(path, "r");
+        if (in != NULL){
+            // printf("file found: %s\n", path);
+            while (fscanf(in, "%[^\n] ", file_content) != EOF){
+                process_message(i, file_content);
+                // printf("session_id: %i .... data: %s \n", i, file_content);
+            }
         }
     }
 }
@@ -253,18 +257,22 @@ void load_all_sessions() {
 void save_session(int session_id) {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
-    if (session_list[session_id].in_use){
+    // if (session_list[session_id]){
         char path[BUFFER_LEN];
         char result[BUFFER_LEN];
-        printf("PATH HERE\n");
+        for (int i = 0; i < NUM_VARIABLES; ++i) {
+            if (session_list[session_id].variables[i]) {
+                printf("%.6f   :   %i\n", session_list[session_id].values[i], i);
+            }
+        }
         get_session_file_path(session_id, path);
-        printf("path: %s \n", path);
+        // printf("path: %s \n", path);
         FILE *out = fopen(path, "w");
         session_to_str(session_id, result);
         fputs(result, out);
         fclose(out);
-        printf("result: %s\n", result);
-    }
+        // printf("result: %s\n", result);
+    // }
 }
 
 /**

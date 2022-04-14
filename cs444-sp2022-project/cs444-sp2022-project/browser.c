@@ -67,7 +67,17 @@ void read_user_input(char message[]) {
 void load_cookie() {
     // TODO: For Part 1.2, write your file operation code here.
     // Hint: The file path of the cookie is stored in COOKIE_PATH.
-    session_id = -1; // You may move this line to anywhere inside this fucntion.
+    char file_session_id[10];
+    FILE *in = fopen(COOKIE_PATH, "r");
+    if (in != NULL){
+        while (fscanf(in, "%[^\n] ", file_session_id) != EOF){
+            session_id = strtol(file_session_id, NULL, 10);
+        }
+    }
+    else{
+       session_id = -1; // You may move this line to anywhere inside this function.
+    }
+
 }
 
 /**
@@ -76,6 +86,11 @@ void load_cookie() {
 void save_cookie() {
     // TODO: For Part 1.2, write your file operation code here.
     // Hint: The file path of the cookie is stored in COOKIE_PATH.
+    FILE *out = fopen(COOKIE_PATH, "w");
+    char file_session_id[10];
+    sprintf(file_session_id, "%i", session_id);
+    fputs(file_session_id, out);
+    fclose(out);
 }
 
 /**
