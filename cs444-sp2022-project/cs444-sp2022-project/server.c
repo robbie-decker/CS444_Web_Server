@@ -1,3 +1,16 @@
+/*
+ ***************************************************************************
+ * Clarkson University                                                     *
+ * CS 444/544: Operating Systems, Spring 2022                              *
+ * Project: Prototyping a Web Server/Browser                               *
+ * Created by Daqing Hou, dhou@clarkson.edu                                *
+ *            Xinchao Song, xisong@clarkson.edu                            *
+ * March 30, 2022                                                          *
+ * Copyright © 2022 CS 444/544 Instructor Team. All rights reserved.       *
+ * Unauthorized use is strictly prohibited.                                *
+ ***************************************************************************
+ */
+
 #include "net_util.h"
 
 #include <stdio.h>
@@ -74,6 +87,9 @@ void browser_handler(int browser_socket_fd);
 // and creates handlers for them.
 void start_server(int port);
 
+// Function to start threads
+void *start_thread(void *arg);
+
 /**
  * Returns the string format of the given session.
  * There will be always 9 digits in the output string.
@@ -86,6 +102,10 @@ void session_to_str(int session_id, char result[]) {
     memset(result, 0, BUFFER_LEN);
     session_t session = session_list[session_id];
 
+    //printf("Hey i'm in session_to_str\n");
+    //printf("NUMVAR %d\n", NUM_VARIABLES);
+    
+    //session.variables[0] = true;
     for (int i = 0; i < NUM_VARIABLES; ++i) {
         if (session.variables[i]) {
             char line[32];
@@ -95,7 +115,7 @@ void session_to_str(int session_id, char result[]) {
             } else {
                 sprintf(line, "%c = %.8e\n", 'a' + i, session.values[i]);
             }
-
+            
             strcat(result, line);
         }
     }
@@ -164,7 +184,6 @@ bool process_message(int session_id, const char message[]) {
         int first_idx = token[0] - 'a';
         first_value = session_list[session_id].values[first_idx];
     }
-
     // Processes the operation symbol.
     token = strtok(NULL, " ");
     if (token == NULL) {
@@ -232,21 +251,6 @@ void load_all_sessions() {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
     //       Don't forget to load all of sessions on the disk.
-
-    // i is like our session_id in this case
-    for(int i = 0; i < NUM_SESSIONS; i++){
-        char path[BUFFER_LEN];
-        char file_content[BUFFER_LEN];
-        get_session_file_path(i, path);
-        FILE *in = fopen(path, "r");
-        if (in != NULL){
-            // printf("file found: %s\n", path);
-            while (fscanf(in, "%[^\n] ", file_content) != EOF){
-                process_message(i, file_content);
-                // printf("session_id: %i .... data: %s \n", i, file_content);
-            }
-        }
-    }
 }
 
 /**
@@ -257,22 +261,6 @@ void load_all_sessions() {
 void save_session(int session_id) {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
-    // if (session_list[session_id]){
-        char path[BUFFER_LEN];
-        char result[BUFFER_LEN];
-        for (int i = 0; i < NUM_VARIABLES; ++i) {
-            if (session_list[session_id].variables[i]) {
-                printf("%.6f   :   %i\n", session_list[session_id].values[i], i);
-            }
-        }
-        get_session_file_path(session_id, path);
-        // printf("path: %s \n", path);
-        FILE *out = fopen(path, "w");
-        session_to_str(session_id, result);
-        fputs(result, out);
-        fclose(out);
-        // printf("result: %s\n", result);
-    // }
 }
 
 /**
@@ -288,33 +276,43 @@ int register_browser(int browser_socket_fd) {
     // TODO: For Part 2.2, identify the critical sections where different threads may read from/write to
     //  the same shared static array browser_list and session_list. Place the lock and unlock
     //  code around the critical sections identified.
-
+    
     for (int i = 0; i < NUM_BROWSER; ++i) {
         if (!browser_list[i].in_use) {
             browser_id = i;
+            pthread_mutex_lock(&browser_list_mutex);
             browser_list[browser_id].in_use = true;
             browser_list[browser_id].socket_fd = browser_socket_fd;
+            pthread_mutex_unlock(&browser_list_mutex);
             break;
         }
     }
-
+    
     char message[BUFFER_LEN];
+    
     receive_message(browser_socket_fd, message);
 
     int session_id = strtol(message, NULL, 10);
+
     if (session_id == -1) {
         for (int i = 0; i < NUM_SESSIONS; ++i) {
             if (!session_list[i].in_use) {
                 session_id = i;
+                pthread_mutex_lock(&session_list_mutex);
                 session_list[session_id].in_use = true;
+                pthread_mutex_unlock(&session_list_mutex);
                 break;
             }
         }
     }
+            
+    pthread_mutex_lock(&browser_list_mutex);
     browser_list[browser_id].session_id = session_id;
-
+    pthread_mutex_unlock(&browser_list_mutex);
+    
     sprintf(message, "%d", session_id);
     send_message(browser_socket_fd, message);
+
 
     return browser_id;
 }
@@ -339,34 +337,53 @@ void browser_handler(int browser_socket_fd) {
     while (true) {
         char message[BUFFER_LEN];
         char response[BUFFER_LEN];
+        double inputValue = 0;
 
         receive_message(socket_fd, message);
         printf("Received message from Browser #%d for Session #%d: %s\n", browser_id, session_id, message);
 
         if ((strcmp(message, "EXIT") == 0) || (strcmp(message, "exit") == 0)) {
             close(socket_fd);
-            pthread_mutex_lock(&browser_list_mutex);
+            //pthread_mutex_lock(&browser_list_mutex);
             browser_list[browser_id].in_use = false;
-            pthread_mutex_unlock(&browser_list_mutex);
+            //pthread_mutex_unlock(&browser_list_mutex);
             printf("Browser #%d exited.\n", browser_id);
             return;
         }
-
         if (message[0] == '\0') {
             continue;
         }
-
-        bool data_valid = process_message(session_id, message);
-        if (!data_valid) {
+        //bool data_valid = process_message(session_id, message);
+        //if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
-            continue;
+        //    continue;
+        //}
+        
+        char letter = message[0];
+        char number[10] = {'\0'};
+        
+        for(int i = 2; i < 12; i++)
+        {
+        	if(message[i] <= 57 && message[i] >= 48 || message[i] == 46)
+        	{
+        		number[i-2] = message[i];
+        	}
         }
-
+        
+        if(session_list[session_id].variables[letter-97] == false)
+        {
+        	session_list[session_id].variables[letter-97] = true;
+        }
+        
+        char *ptr;
+        double numberDub = strtod(number, &ptr);
+        
+        session_list[session_id].values[letter-97] = numberDub;
+        
         session_to_str(session_id, response);
-        broadcast(session_id, response);
 
+        broadcast(session_id, response);
         save_session(session_id);
-        printf("session saved\n");
     }
 }
 
@@ -416,12 +433,25 @@ void start_server(int port) {
 
         // Starts the handler thread for the new browser.
         // TODO: For Part 2.1, creat a thread to run browser_handler() here.
-        browser_handler(browser_socket_fd);
+        pthread_t thread;
+        int *threadArg = malloc(sizeof(*threadArg));
+        *threadArg = browser_socket_fd;
+        pthread_create(&thread, NULL, start_thread, threadArg);
+        
+        //browser_handler(browser_socket_fd);
     }
 
     // Closes the socket.
     close(server_socket_fd);
 }
+
+//Function to start threads with the browser_handler function
+void *start_thread(void *arg)
+{
+	int browser_socket_fd = *((int *) arg);
+	browser_handler(browser_socket_fd);
+}
+
 
 /**
  * The main function for the server.
