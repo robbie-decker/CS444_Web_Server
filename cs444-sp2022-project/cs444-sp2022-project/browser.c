@@ -1,3 +1,16 @@
+/*
+ ***************************************************************************
+ * Clarkson University                                                     *
+ * CS 444/544: Operating Systems, Spring 2022                              *
+ * Project: Prototyping a Web Server/Browser                               *
+ * Created by Daqing Hou, dhou@clarkson.edu                                *
+ *            Xinchao Song, xisong@clarkson.edu                            *
+ * March 30, 2022                                                          *
+ * Copyright © 2022 CS 444/544 Instructor Team. All rights reserved.       *
+ * Unauthorized use is strictly prohibited.                                *
+ ***************************************************************************
+ */
+
 #include "net_util.h"
 
 #include <stdio.h>
@@ -36,6 +49,9 @@ void register_server();
 // Listens to the server.
 // Keeps receiving and printing the messages from the server.
 void server_listener();
+
+// starts the thread that run server_listener
+void *start_thread(void *unused);
 
 // Starts the browser.
 // Sets up the connection, start the listener thread,
@@ -88,11 +104,6 @@ void load_cookie() {
 void save_cookie() {
     // TODO: For Part 1.2, write your file operation code here.
     // Hint: The file path of the cookie is stored in COOKIE_PATH.
-    FILE *out = fopen(COOKIE_PATH, "w");
-    char file_session_id[10];
-    sprintf(file_session_id, "%i", session_id);
-    fputs(file_session_id, out);
-    fclose(out);
 }
 
 /**
@@ -114,7 +125,7 @@ void server_listener() {
     // TODO: For Part 2.3, uncomment the loop code that was commented out
     //  when you are done with multithreading.
 
-    // while (browser_on) {
+    while (browser_on) {
 
     char message[BUFFER_LEN];
     receive_message(server_socket_fd, message);
@@ -123,7 +134,7 @@ void server_listener() {
 
     puts(message);
 
-    //}
+    }
 }
 
 /**
@@ -162,6 +173,9 @@ void start_browser(const char host_ip[], int port) {
 
     // Saves the session ID to the cookie on the disk.
     save_cookie();
+    
+    pthread_t thread;
+    pthread_create(&thread, NULL, start_thread, NULL);
 
     // Main loop to read in the user's input and send it out.
     while (browser_on) {
@@ -173,12 +187,16 @@ void start_browser(const char host_ip[], int port) {
         // TODO: For Part 2.3, move server_listener() out of the loop and
         //  creat a thread to run it.
         // Hint: Should we place server_listener() before or after the loop?
-        server_listener();
     }
 
     // Closes the socket.
     close(server_socket_fd);
     printf("Closed the connection to %s:%d.\n", host_ip, port);
+}
+
+void *start_thread(void *unused)
+{
+	server_listener();
 }
 
 /**
