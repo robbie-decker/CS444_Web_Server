@@ -149,21 +149,40 @@ bool process_message(int session_id, const char message[]) {
     char data[BUFFER_LEN];
     strcpy(data, message);
 
+    if(strlen(message) <= 4){
+        return false;
+    }
+    // altered to add length check (minimum length of a valid input is 5 ex: 'x = 1')
+
     // Processes the result variable.
     token = strtok(data, " ");
-    result_idx = token[0] - 'a';
+    if (isalpha(token)){
+        result_idx = token[0] - 'a';;
+    }
+    else {
+        return false;
+    }
+    // altered to add if statement to return false when token is anything other than a variable
+    // result_idx = token[0] - 'a';
 
     // Processes "=".
     token = strtok(NULL, " ");
+    if (!strcmp(token,"=")){
+        return false;
+    }
+    // altered to ensure = sign is valid
 
     // Processes the first variable/value.
     token = strtok(NULL, " ");
     if (is_str_numeric(token)) {
         first_value = strtod(token, NULL);
+    } else if (isalnum(!token)) {
+        return false;
     } else {
         int first_idx = token[0] - 'a';
         first_value = session_list[session_id].values[first_idx];
     }
+    // altered to add alphanumeric check
 
     // Processes the operation symbol.
     token = strtok(NULL, " ");
@@ -176,15 +195,24 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the second variable/value.
     token = strtok(NULL, " ");
-    if (is_str_numeric(token)) {
+    if (strcmp(token,"") == 0){
+        return false;
+    } else if (is_str_numeric(token)) {
         second_value = strtod(token, NULL);
+    } else if (isalnum(!token)) {
+        return false;
     } else {
         int second_idx = token[0] - 'a';
         second_value = session_list[session_id].values[second_idx];
     }
+    // altered to add check for no second variable & alphanumeric check
 
     // No data should be left over thereafter.
     token = strtok(NULL, " ");
+    if (strcmp(token,"") != 0){
+        return false;
+    }
+    // altered to check if any data is left over
 
     session_list[session_id].variables[result_idx] = true;
 
@@ -196,7 +224,10 @@ bool process_message(int session_id, const char message[]) {
         session_list[session_id].values[result_idx] = first_value * second_value;
     } else if (symbol == '/') {
         session_list[session_id].values[result_idx] = first_value / second_value;
+    } else {
+        return false;
     }
+    // altered to add final else statement in case symbol isn't valid
 
     return true;
 }
@@ -339,6 +370,8 @@ void browser_handler(int browser_socket_fd) {
     while (true) {
         char message[BUFFER_LEN];
         char response[BUFFER_LEN];
+        //added error string
+        char err[5] = "ERROR";
 
         receive_message(socket_fd, message);
         printf("Received message from Browser #%d for Session #%d: %s\n", browser_id, session_id, message);
@@ -356,10 +389,17 @@ void browser_handler(int browser_socket_fd) {
             continue;
         }
 
+        printf(message);
         bool data_valid = process_message(session_id, message);
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
+            //continue;
+            broadcast(session_id, err);
+
+            save_session(session_id);
+            printf("session saved\n");
             continue;
+            // altered to broadcast an error instead of response
         }
 
         session_to_str(session_id, response);
