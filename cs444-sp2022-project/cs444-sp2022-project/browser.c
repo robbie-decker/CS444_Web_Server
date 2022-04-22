@@ -77,6 +77,8 @@ void load_cookie() {
     else{
        session_id = -1; // You may move this line to anywhere inside this function.
     }
+    
+    fclose(in);
 
 }
 
