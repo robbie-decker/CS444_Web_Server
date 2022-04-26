@@ -373,6 +373,21 @@ int register_browser(int browser_socket_fd) {
     //  the same shared static array browser_list and session_list. Place the lock and unlock
     //  code around the critical sections identified.
     
+
+    for (int i = 0; i < NUM_BROWSER; ++i) {
+        if (!browser_list[i].in_use) {
+            browser_id = i;
+            pthread_mutex_lock(&browser_list_mutex);
+            browser_list[browser_id].in_use = true;
+            browser_list[browser_id].socket_fd = browser_socket_fd;
+            pthread_mutex_unlock(&browser_list_mutex);
+            break;
+        }
+    }
+    
+    char message[BUFFER_LEN];
+    receive_message(browser_socket_fd, message);
+    
     bool generate_id = false;
     while(generate_id == false){
         browser_id = (rand() % (NUM_SESSIONS + 1));
@@ -385,24 +400,10 @@ int register_browser(int browser_socket_fd) {
         }
     }
 
-    // for (int i = 0; i < NUM_BROWSER; ++i) {
-    //     if (!browser_list[i].in_use) {
-    //         browser_id = i;
-    //         pthread_mutex_lock(&browser_list_mutex);
-    //         browser_list[browser_id].in_use = true;
-    //         browser_list[browser_id].socket_fd = browser_socket_fd;
-    //         pthread_mutex_unlock(&browser_list_mutex);
-    //         break;
-    //     }
-    // }
-    
-    char message[BUFFER_LEN];
-    receive_message(browser_socket_fd, message);
-
-
     int session_id = strtol(message, NULL, 10);
 
     if (session_id == -1) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -445,6 +446,16 @@ int register_browser(int browser_socket_fd) {
         }
     }
 <<<<<<< HEAD
+=======
+        bool generate_id = false;
+        while(generate_id == false){
+            session_id = (rand() % (NUM_SESSIONS + 1));
+            if(!session_list[session_id].in_use){
+                generate_id = true;
+                browser_list[browser_id].in_use = true;
+        }
+    }
+>>>>>>> Fixing generation to session list
         // for (int i = 0; i < NUM_SESSIONS; ++i) {
         //     if (!session_list[i].in_use) {
         //         session_id = i;
@@ -453,9 +464,12 @@ int register_browser(int browser_socket_fd) {
         //     }
         // }
     }
+<<<<<<< HEAD
 >>>>>>> Fixing generation to session list
 =======
 >>>>>>> Small changes to comments and add a sleep to rng
+=======
+>>>>>>> Fixing generation to session list
     browser_list[browser_id].session_id = session_id;
     pthread_mutex_unlock(&browser_list_mutex);
     
