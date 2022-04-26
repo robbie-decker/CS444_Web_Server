@@ -289,7 +289,6 @@ void load_all_sessions() {
 void save_session(int session_id) {
     // TODO: For Part 1.1, write your file operation code here.
     // Hint: Use get_session_file_path() to get the file path for each session.
-    // if (session_list[session_id]){
         char path[BUFFER_LEN];
         char result[BUFFER_LEN];
         for (int i = 0; i < NUM_VARIABLES; ++i) {
@@ -298,13 +297,11 @@ void save_session(int session_id) {
             }
         }
         get_session_file_path(session_id, path);
-        // printf("path: %s \n", path);
         FILE *out = fopen(path, "w");
         session_to_str(session_id, result);
         fputs(result, out);
         fclose(out);
-        // printf("result: %s\n", result);
-    // }
+
 }
 
 /**
@@ -337,13 +334,12 @@ int register_browser(int browser_socket_fd) {
 
     int session_id = strtol(message, NULL, 10);
     if (session_id == -1) {
-        bool generate_id = false;
         while(generate_id == false){
             // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
             if(!session_list[session_id].in_use){
-                generate_id = true;
-                browser_list[browser_id].in_use = true;
+                session_list[session_id].in_use = true;
+                break;
             }
             sleep(1);
         }
