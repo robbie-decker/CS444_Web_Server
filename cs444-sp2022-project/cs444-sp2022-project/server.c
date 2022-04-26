@@ -373,16 +373,28 @@ int register_browser(int browser_socket_fd) {
     //  the same shared static array browser_list and session_list. Place the lock and unlock
     //  code around the critical sections identified.
     
-    for (int i = 0; i < NUM_BROWSER; ++i) {
-        if (!browser_list[i].in_use) {
-            browser_id = i;
+    bool generate_id = false;
+    while(generate_id == false){
+        browser_id = (rand() % (NUM_SESSIONS + 1));
+        if(!browser_list[browser_id].in_use){
+            generate_id = true;
             pthread_mutex_lock(&browser_list_mutex);
             browser_list[browser_id].in_use = true;
             browser_list[browser_id].socket_fd = browser_socket_fd;
             pthread_mutex_unlock(&browser_list_mutex);
-            break;
         }
     }
+
+    // for (int i = 0; i < NUM_BROWSER; ++i) {
+    //     if (!browser_list[i].in_use) {
+    //         browser_id = i;
+    //         pthread_mutex_lock(&browser_list_mutex);
+    //         browser_list[browser_id].in_use = true;
+    //         browser_list[browser_id].socket_fd = browser_socket_fd;
+    //         pthread_mutex_unlock(&browser_list_mutex);
+    //         break;
+    //     }
+    // }
     
     char message[BUFFER_LEN];
     receive_message(browser_socket_fd, message);
@@ -703,9 +715,13 @@ list_t List_Lookup(list_t *L, int key) {
  */
 int main(int argc, char *argv[]) {
     
+<<<<<<< HEAD
     // Set new seed and initialize hashmap
     srand(time(NULL));
     Hash_Init(&session_list);
+=======
+    srand(time(NULL));
+>>>>>>> Generating random browser_id
     int port = DEFAULT_PORT;
 
     if (argc == 1) {
