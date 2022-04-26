@@ -373,7 +373,6 @@ int register_browser(int browser_socket_fd) {
     //  the same shared static array browser_list and session_list. Place the lock and unlock
     //  code around the critical sections identified.
     
-
     for (int i = 0; i < NUM_BROWSER; ++i) {
         if (!browser_list[i].in_use) {
             browser_id = i;
@@ -387,18 +386,6 @@ int register_browser(int browser_socket_fd) {
     
     char message[BUFFER_LEN];
     receive_message(browser_socket_fd, message);
-    
-    bool generate_id = false;
-    while(generate_id == false){
-        browser_id = (rand() % (NUM_SESSIONS + 1));
-        if(!browser_list[browser_id].in_use){
-            generate_id = true;
-            pthread_mutex_lock(&browser_list_mutex);
-            browser_list[browser_id].in_use = true;
-            browser_list[browser_id].socket_fd = browser_socket_fd;
-            pthread_mutex_unlock(&browser_list_mutex);
-        }
-    }
 
     int session_id = strtol(message, NULL, 10);
 
@@ -449,12 +436,16 @@ int register_browser(int browser_socket_fd) {
 =======
         bool generate_id = false;
         while(generate_id == false){
+            // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
             if(!session_list[session_id].in_use){
                 generate_id = true;
                 browser_list[browser_id].in_use = true;
+            }
+            sleep(1);
         }
     }
+<<<<<<< HEAD
 >>>>>>> Fixing generation to session list
         // for (int i = 0; i < NUM_SESSIONS; ++i) {
         //     if (!session_list[i].in_use) {
@@ -470,6 +461,8 @@ int register_browser(int browser_socket_fd) {
 >>>>>>> Small changes to comments and add a sleep to rng
 =======
 >>>>>>> Fixing generation to session list
+=======
+>>>>>>> Small changes to comments and add a sleep to rng
     browser_list[browser_id].session_id = session_id;
     pthread_mutex_unlock(&browser_list_mutex);
     
