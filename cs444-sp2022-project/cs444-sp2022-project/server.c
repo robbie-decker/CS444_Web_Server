@@ -395,6 +395,7 @@ int register_browser(int browser_socket_fd) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         for (int i = 0; i < NUM_SESSIONS; ++i) {
             if (!session_list[i].in_use) {
                 session_id = i;
@@ -435,12 +436,14 @@ int register_browser(int browser_socket_fd) {
 <<<<<<< HEAD
 =======
         bool generate_id = false;
+=======
+>>>>>>> Change to session list over browser list
         while(generate_id == false){
             // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
             if(!session_list[session_id].in_use){
-                generate_id = true;
-                browser_list[browser_id].in_use = true;
+                session_list[session_id].in_use = true;
+                break;
             }
             sleep(1);
         }
