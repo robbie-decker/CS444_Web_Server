@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
+#include <time.h>
 
 #define NUM_VARIABLES 26
 #define NUM_SESSIONS 128
@@ -288,16 +289,30 @@ int register_browser(int browser_socket_fd) {
     // TODO: For Part 2.2, identify the critical sections where different threads may read from/write to
     //  the same shared static array browser_list and session_list. Place the lock and unlock
     //  code around the critical sections identified.
-
-    for (int i = 0; i < NUM_BROWSER; ++i) {
-        if (!browser_list[i].in_use) {
-            browser_id = i;
+    
+    bool generate_id = false;
+    while(generate_id == false){
+        browser_id = (rand() % (NUM_SESSIONS + 1));
+        if(!browser_list[browser_id].in_use){
+            generate_id = true;
+            pthread_mutex_lock(&browser_list_mutex);
             browser_list[browser_id].in_use = true;
             browser_list[browser_id].socket_fd = browser_socket_fd;
-            break;
+            pthread_mutex_unlock(&browser_list_mutex);
         }
     }
 
+    // for (int i = 0; i < NUM_BROWSER; ++i) {
+    //     if (!browser_list[i].in_use) {
+    //         browser_id = i;
+    //         pthread_mutex_lock(&browser_list_mutex);
+    //         browser_list[browser_id].in_use = true;
+    //         browser_list[browser_id].socket_fd = browser_socket_fd;
+    //         pthread_mutex_unlock(&browser_list_mutex);
+    //         break;
+    //     }
+    // }
+    
     char message[BUFFER_LEN];
     receive_message(browser_socket_fd, message);
 
@@ -431,6 +446,8 @@ void start_server(int port) {
  * @return exit code
  */
 int main(int argc, char *argv[]) {
+    
+    srand(time(NULL));
     int port = DEFAULT_PORT;
 
     if (argc == 1) {
