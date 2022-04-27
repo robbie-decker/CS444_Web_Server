@@ -225,10 +225,6 @@ bool process_message(int session_id, const char message[]) {
 
     // Get the corresponding session
     // Hash_Insert(&session_list, session_id);
-<<<<<<< HEAD
-=======
-    printf("hello there friends: %d\n", session_id);
->>>>>>> Working version of hashmap
     list_t session = Hash_Lookup(&session_list, session_id);
 
     if (is_str_numeric(token)) {
@@ -280,11 +276,6 @@ bool process_message(int session_id, const char message[]) {
 
     // session_list[session_id].variables[result_idx] = true;
     session.head->variables[result_idx] = true;
-<<<<<<< HEAD
-=======
-
-    printf("first: %f     second:%f", first_value, second_value);
->>>>>>> Working version of hashmap
 
     if (symbol == '+') {
         // session_list[session_id].values[result_idx] = first_value + second_value;
@@ -298,11 +289,8 @@ bool process_message(int session_id, const char message[]) {
     } else if (symbol == '/') {
         // session_list[session_id].values[result_idx] = first_value / second_value;
         session.head->values[result_idx] = first_value / second_value;
-<<<<<<< HEAD
     } else {
         return false;
-=======
->>>>>>> Working version of hashmap
     }
     // altered to add final else statement in case symbol isn't valid
 
@@ -855,7 +843,7 @@ list_t List_Lookup(list_t *L, int key) {
  */
 int main(int argc, char *argv[]) {
     
-<<<<<<< HEAD
+<<<<<<< 
 <<<<<<< HEAD
     // Set new seed and initialize hashmap
     srand(time(NULL));
