@@ -240,6 +240,9 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the operation symbol.
     token = strtok(NULL, " ");
+    printf("first: %f   token: %s\n", first_value, token);
+    printf("session: %d\n", session.key);
+    printf("resultind: %d\n", result_idx);
     if (token == NULL) {
         // session_list[session_id].variables[result_idx] = true;
         // session_list[session_id].values[result_idx] = first_value;
@@ -331,6 +334,7 @@ void load_all_sessions() {
         char path[BUFFER_LEN];
         char file_content[BUFFER_LEN];
         get_session_file_path(i, path);
+        // printf("Path: %s\n", path);
         FILE *in = fopen(path, "r");
         if (in != NULL){
             Hash_Insert(&session_list, i);
@@ -354,6 +358,7 @@ void save_session(int session_id) {
         get_session_file_path(session_id, path);
         FILE *out = fopen(path, "w");
         session_to_str(session_id, result);
+        printf("result: %s\n", result);
         fputs(result, out);
         fclose(out);
 
@@ -387,9 +392,11 @@ int register_browser(int browser_socket_fd) {
     char message[BUFFER_LEN];
     receive_message(browser_socket_fd, message);
 
+
     int session_id = strtol(message, NULL, 10);
 
     if (session_id == -1) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -439,10 +446,18 @@ int register_browser(int browser_socket_fd) {
 =======
 >>>>>>> Change to session list over browser list
         while(generate_id == false){
+=======
+        session_t session = Hash_Lookup(&session_list, session_id);
+        while(true){
+>>>>>>> Partly working hashmap
             // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
-            if(!session_list[session_id].in_use){
-                session_list[session_id].in_use = true;
+            // if(!session_list[session_id].in_use){
+            //     session_list[session_id].in_use = true;
+            //     break;
+            // }
+            if(!session.in_use){
+                session.in_use = true;
                 break;
             }
             sleep(1);
@@ -515,6 +530,7 @@ void browser_handler(int browser_socket_fd) {
             continue;
         }
         bool data_valid = process_message(session_id, message);
+        printf("hi there\n");
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
             //continue;
@@ -717,6 +733,104 @@ list_t List_Lookup(list_t *L, int key) {
 
 
 /**
+ * @brief Initialize hashmap
+ * 
+ * @param H pointer to hash struct
+ */
+void Hash_Init(hash_t *H) {
+    int i;
+    for (i = 0; i < NUM_SESSIONS; i++)
+        List_Init(&H->lists[i]);
+}
+
+/**
+ * @brief Insert into hashmap
+ * 
+ * @param H pointer to hash
+ * @param key key to store data (should be a session ID)
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void Hash_Insert(hash_t *H, int key) {
+    return List_Insert(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param H 
+ * @param key 
+ * @return session_t 
+ */
+session_t Hash_Lookup(hash_t *H, int key) {
+    return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ */
+void List_Init(list_t *L) {
+    L->head = NULL;
+    pthread_mutex_init(&L->lock, NULL);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void List_Insert(list_t *L, int key) {
+    // synchronization not needed
+    session_t *new = malloc(sizeof(session_t));
+    if (new == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    new->key = key;
+    // new->in_use = in_use;
+    // new->variables = variables;
+    // new->values = values;
+
+    // just lock critical section
+    pthread_mutex_lock(&L->lock);
+    new->next = L->head;
+    L->head = new;
+    pthread_mutex_unlock(&L->lock);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @return session_t 
+ */
+session_t List_Lookup(list_t *L, int key) {
+    int rv = -1;
+    pthread_mutex_lock(&L->lock);
+    session_t *curr = L->head;
+    while (curr) {
+        printf("current key: %d\n", curr->key);
+        if (curr->key == key) {
+            rv = key;
+            break;
+        }
+        curr = curr->next;
+    }
+    pthread_mutex_unlock(&L->lock);
+    return *curr; // now both success and failure
+}
+
+
+/**
  * The main function for the server.
  *
  * @param argc the number of command-line arguments passed by the user
@@ -726,12 +840,18 @@ list_t List_Lookup(list_t *L, int key) {
 int main(int argc, char *argv[]) {
     
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Set new seed and initialize hashmap
     srand(time(NULL));
     Hash_Init(&session_list);
 =======
     srand(time(NULL));
 >>>>>>> Generating random browser_id
+=======
+    // Set new seed and initialize hashmap
+    srand(time(NULL));
+    Hash_Init(&session_list);
+>>>>>>> Partly working hashmap
     int port = DEFAULT_PORT;
 
     if (argc == 1) {
