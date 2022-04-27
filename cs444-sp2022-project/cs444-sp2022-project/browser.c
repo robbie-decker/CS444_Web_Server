@@ -117,11 +117,19 @@ void server_listener() {
     // while (browser_on) {
 
     char message[BUFFER_LEN];
+    char err[5] = "ERROR";
+    char errMessage[14] = "Invalid input!";
     receive_message(server_socket_fd, message);
 
     // TODO: For Part 3.1, add code here to print the error message.
+    if (strcmp(message,err) == 0){
+        puts(errMessage);
+    } else{
+        puts(message);
+    }
+    // altered to add if else statement to catch incoming errors
 
-    puts(message);
+    //puts(message);
 
     //}
 }
