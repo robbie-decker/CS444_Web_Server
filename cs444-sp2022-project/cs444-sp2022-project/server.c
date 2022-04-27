@@ -225,6 +225,10 @@ bool process_message(int session_id, const char message[]) {
 
     // Get the corresponding session
     // Hash_Insert(&session_list, session_id);
+<<<<<<< HEAD
+=======
+    printf("hello there friends: %d\n", session_id);
+>>>>>>> Working version of hashmap
     list_t session = Hash_Lookup(&session_list, session_id);
 
     if (is_str_numeric(token)) {
@@ -241,7 +245,7 @@ bool process_message(int session_id, const char message[]) {
     // Processes the operation symbol.
     token = strtok(NULL, " ");
     printf("first: %f   token: %s\n", first_value, token);
-    printf("session: %d\n", session.key);
+    // printf("session: %d\n", session.key);
     printf("resultind: %d\n", result_idx);
     if (token == NULL) {
         // session_list[session_id].variables[result_idx] = true;
@@ -276,6 +280,11 @@ bool process_message(int session_id, const char message[]) {
 
     // session_list[session_id].variables[result_idx] = true;
     session.head->variables[result_idx] = true;
+<<<<<<< HEAD
+=======
+
+    printf("first: %f     second:%f", first_value, second_value);
+>>>>>>> Working version of hashmap
 
     if (symbol == '+') {
         // session_list[session_id].values[result_idx] = first_value + second_value;
@@ -289,8 +298,11 @@ bool process_message(int session_id, const char message[]) {
     } else if (symbol == '/') {
         // session_list[session_id].values[result_idx] = first_value / second_value;
         session.head->values[result_idx] = first_value / second_value;
+<<<<<<< HEAD
     } else {
         return false;
+=======
+>>>>>>> Working version of hashmap
     }
     // altered to add final else statement in case symbol isn't valid
 
@@ -403,6 +415,7 @@ int register_browser(int browser_socket_fd) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         for (int i = 0; i < NUM_SESSIONS; ++i) {
             if (!session_list[i].in_use) {
                 session_id = i;
@@ -422,6 +435,9 @@ int register_browser(int browser_socket_fd) {
         while(generate_id == false){
 =======
         session_t session = Hash_Lookup(&session_list, session_id);
+=======
+        list_t session = Hash_Lookup(&session_list, session_id);
+>>>>>>> Working version of hashmap
 =======
         list_t session = Hash_Lookup(&session_list, session_id);
 >>>>>>> Working version of hashmap
@@ -456,8 +472,8 @@ int register_browser(int browser_socket_fd) {
             //     session_list[session_id].in_use = true;
             //     break;
             // }
-            if(!session.in_use){
-                session.in_use = true;
+            if(!session.head->in_use){
+                session.head->in_use = true;
                 break;
             }
             sleep(1);
@@ -763,7 +779,7 @@ void Hash_Insert(hash_t *H, int key) {
  * @param key 
  * @return session_t 
  */
-session_t Hash_Lookup(hash_t *H, int key) {
+list_t Hash_Lookup(hash_t *H, int key) {
     return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
 }
 
@@ -813,20 +829,20 @@ void List_Insert(list_t *L, int key) {
  * @param key 
  * @return session_t 
  */
-session_t List_Lookup(list_t *L, int key) {
+list_t List_Lookup(list_t *L, int key) {
     int rv = -1;
     pthread_mutex_lock(&L->lock);
     session_t *curr = L->head;
     while (curr) {
         printf("current key: %d\n", curr->key);
         if (curr->key == key) {
-            rv = key;
+            L->head = curr;
             break;
         }
         curr = curr->next;
     }
     pthread_mutex_unlock(&L->lock);
-    return *curr; // now both success and failure
+    return *L; // now both success and failure
 }
 
 
