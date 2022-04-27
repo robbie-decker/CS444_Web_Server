@@ -25,14 +25,27 @@ typedef struct browser_struct {
 } browser_t;
 
 typedef struct session_struct {
+    int key;
     bool in_use;
     bool variables[NUM_VARIABLES];
     double values[NUM_VARIABLES];
+    struct session_struct *next;
 } session_t;
+
+// basic list structure (one used per list)
+typedef struct __list_t {
+    session_t *head;
+    pthread_mutex_t lock;
+} list_t;
+
+// basic structure for our hashmap 
+typedef struct __hash_t {
+    list_t lists[NUM_SESSIONS];
+} hash_t;
 
 static browser_t browser_list[NUM_BROWSER];                             // Stores the information of all browsers.
 // TODO: For Part 3.2, convert the session_list to a simple hashmap/dictionary.
-static session_t session_list[NUM_SESSIONS];                            // Stores the information of all sessions.
+static hash_t session_list;                                             // Stores the information of all sessions.
 static pthread_mutex_t browser_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the browser list.
 static pthread_mutex_t session_list_mutex = PTHREAD_MUTEX_INITIALIZER;  // A mutex lock for the session list.
 
@@ -75,6 +88,25 @@ void browser_handler(int browser_socket_fd);
 // and creates handlers for them.
 void start_server(int port);
 
+// Initialize hashmap
+void Hash_Init(hash_t *H);
+
+// Insert value into hashmap
+void Hash_Insert(hash_t *H, int key);
+
+// Look up session in hash map using session id
+session_t Hash_Lookup(hash_t *H, int session_id);
+
+// Initialize linked list (hashmap needs this)
+void List_Init(list_t *L);
+
+// Insert value into linked list
+void List_Insert(list_t *L, int key);
+
+// Look up session in linked list using session id
+session_t List_Lookup(list_t *L, int session_id);
+
+
 /**
  * Returns the string format of the given session.
  * There will be always 9 digits in the output string.
@@ -85,12 +117,15 @@ void start_server(int port);
  */
 void session_to_str(int session_id, char result[]) {
     memset(result, 0, BUFFER_LEN);
-    session_t session = session_list[session_id];
+    // session_t session = session_list[session_id];
+    session_t session = Hash_Lookup(&session_list, session_id);
+
+    printf("session check: %d\n", session.key);
 
     for (int i = 0; i < NUM_VARIABLES; ++i) {
+        printf("%f", session.values[i]);
         if (session.variables[i]) {
             char line[32];
-
             if (session.values[i] < 1000) {
                 sprintf(line, "%c = %.6f\n", 'a' + i, session.values[i]);
             } else {
@@ -175,21 +210,33 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the first variable/value.
     token = strtok(NULL, " ");
+
+    // Get the corresponding session
+    // Hash_Insert(&session_list, session_id);
+    printf("hello there friends: %d\n", session_id);
+    session_t session = Hash_Lookup(&session_list, session_id);
+
     if (is_str_numeric(token)) {
         first_value = strtod(token, NULL);
     } else if (isalnum(!token)) {
         return false;
     } else {
         int first_idx = token[0] - 'a';
-        first_value = session_list[session_id].values[first_idx];
+        // first_value = session_list[session_id].values[first_idx];
+        first_value = session.values[first_idx];
     }
     // altered to add alphanumeric check
 
     // Processes the operation symbol.
     token = strtok(NULL, " ");
+    printf("first: %f   token: %s\n", first_value, token);
+    printf("session: %d\n", session.key);
+    printf("resultind: %d\n", result_idx);
     if (token == NULL) {
-        session_list[session_id].variables[result_idx] = true;
-        session_list[session_id].values[result_idx] = first_value;
+        // session_list[session_id].variables[result_idx] = true;
+        // session_list[session_id].values[result_idx] = first_value;
+        session.variables[result_idx] = true;
+        session.values[result_idx] = first_value;
         return true;
     }
     symbol = token[0];
@@ -204,7 +251,8 @@ bool process_message(int session_id, const char message[]) {
         return false;
     } else {
         int second_idx = token[0] - 'a';
-        second_value = session_list[session_id].values[second_idx];
+        // second_value = session_list[session_id].values[second_idx];
+        second_value = session.values[second_idx];
     }
     // altered to add check for no second variable & alphanumeric check
 
@@ -215,16 +263,23 @@ bool process_message(int session_id, const char message[]) {
     }
     // altered to check if any data is left over
 
-    session_list[session_id].variables[result_idx] = true;
+    // session_list[session_id].variables[result_idx] = true;
+    session.variables[result_idx] = true;
+
+    printf("first: %f     second:%f", first_value, second_value);
 
     if (symbol == '+') {
-        session_list[session_id].values[result_idx] = first_value + second_value;
+        // session_list[session_id].values[result_idx] = first_value + second_value;
+        session.values[result_idx] = first_value + second_value;
     } else if (symbol == '-') {
-        session_list[session_id].values[result_idx] = first_value - second_value;
+        // session_list[session_id].values[result_idx] = first_value - second_value;
+        session.values[result_idx] = first_value - second_value;
     } else if (symbol == '*') {
-        session_list[session_id].values[result_idx] = first_value * second_value;
+        // session_list[session_id].values[result_idx] = first_value * second_value;
+        session.values[result_idx] = first_value * second_value;
     } else if (symbol == '/') {
-        session_list[session_id].values[result_idx] = first_value / second_value;
+        // session_list[session_id].values[result_idx] = first_value / second_value;
+        session.values[result_idx] = first_value / second_value;
     } else {
         return false;
     }
@@ -270,12 +325,14 @@ void load_all_sessions() {
         char path[BUFFER_LEN];
         char file_content[BUFFER_LEN];
         get_session_file_path(i, path);
+        // printf("Path: %s\n", path);
         FILE *in = fopen(path, "r");
         if (in != NULL){
-            // printf("file found: %s\n", path);
+            printf("file found: %s\n", path);
+            Hash_Insert(&session_list, i);
             while (fscanf(in, "%[^\n] ", file_content) != EOF){
                 process_message(i, file_content);
-                // printf("session_id: %i .... data: %s \n", i, file_content);
+                printf("session_id: %i .... data: %s \n", i, file_content);
             }
         }
     }
@@ -291,14 +348,15 @@ void save_session(int session_id) {
     // Hint: Use get_session_file_path() to get the file path for each session.
         char path[BUFFER_LEN];
         char result[BUFFER_LEN];
-        for (int i = 0; i < NUM_VARIABLES; ++i) {
-            if (session_list[session_id].variables[i]) {
-                printf("%.6f   :   %i\n", session_list[session_id].values[i], i);
-            }
-        }
+        // for (int i = 0; i < NUM_VARIABLES; ++i) {
+        //     if (session_list[session_id].variables[i]) {
+        //         printf("%.6f   :   %i\n", session_list[session_id].values[i], i);
+        //     }
+        // }
         get_session_file_path(session_id, path);
         FILE *out = fopen(path, "w");
         session_to_str(session_id, result);
+        printf("result: %s\n", result);
         fputs(result, out);
         fclose(out);
 
@@ -332,13 +390,19 @@ int register_browser(int browser_socket_fd) {
     char message[BUFFER_LEN];
     receive_message(browser_socket_fd, message);
 
+
     int session_id = strtol(message, NULL, 10);
     if (session_id == -1) {
-        while(generate_id == false){
+        session_t session = Hash_Lookup(&session_list, session_id);
+        while(true){
             // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
-            if(!session_list[session_id].in_use){
-                session_list[session_id].in_use = true;
+            // if(!session_list[session_id].in_use){
+            //     session_list[session_id].in_use = true;
+            //     break;
+            // }
+            if(!session.in_use){
+                session.in_use = true;
                 break;
             }
             sleep(1);
@@ -390,9 +454,8 @@ void browser_handler(int browser_socket_fd) {
         if (message[0] == '\0') {
             continue;
         }
-
-        printf(message);
         bool data_valid = process_message(session_id, message);
+        printf("hi there\n");
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
             //continue;
@@ -466,6 +529,104 @@ void start_server(int port) {
 }
 
 /**
+ * @brief Initialize hashmap
+ * 
+ * @param H pointer to hash struct
+ */
+void Hash_Init(hash_t *H) {
+    int i;
+    for (i = 0; i < NUM_SESSIONS; i++)
+        List_Init(&H->lists[i]);
+}
+
+/**
+ * @brief Insert into hashmap
+ * 
+ * @param H pointer to hash
+ * @param key key to store data (should be a session ID)
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void Hash_Insert(hash_t *H, int key) {
+    return List_Insert(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param H 
+ * @param key 
+ * @return session_t 
+ */
+session_t Hash_Lookup(hash_t *H, int key) {
+    return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ */
+void List_Init(list_t *L) {
+    L->head = NULL;
+    pthread_mutex_init(&L->lock, NULL);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void List_Insert(list_t *L, int key) {
+    // synchronization not needed
+    session_t *new = malloc(sizeof(session_t));
+    if (new == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    new->key = key;
+    // new->in_use = in_use;
+    // new->variables = variables;
+    // new->values = values;
+
+    // just lock critical section
+    pthread_mutex_lock(&L->lock);
+    new->next = L->head;
+    L->head = new;
+    pthread_mutex_unlock(&L->lock);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @return session_t 
+ */
+session_t List_Lookup(list_t *L, int key) {
+    int rv = -1;
+    pthread_mutex_lock(&L->lock);
+    session_t *curr = L->head;
+    while (curr) {
+        printf("current key: %d\n", curr->key);
+        if (curr->key == key) {
+            rv = key;
+            break;
+        }
+        curr = curr->next;
+    }
+    pthread_mutex_unlock(&L->lock);
+    return *curr; // now both success and failure
+}
+
+
+/**
  * The main function for the server.
  *
  * @param argc the number of command-line arguments passed by the user
@@ -474,7 +635,9 @@ void start_server(int port) {
  */
 int main(int argc, char *argv[]) {
     
+    // Set new seed and initialize hashmap
     srand(time(NULL));
+    Hash_Init(&session_list);
     int port = DEFAULT_PORT;
 
     if (argc == 1) {
