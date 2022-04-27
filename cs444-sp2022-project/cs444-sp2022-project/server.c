@@ -120,10 +120,7 @@ void session_to_str(int session_id, char result[]) {
     // session_t session = session_list[session_id];
     list_t session = Hash_Lookup(&session_list, session_id);
 
-    printf("session check: %d\n", session.head->key);
-
     for (int i = 0; i < NUM_VARIABLES; ++i) {
-        printf("%f", session.head->values[i]);
         if (session.head->variables[i]) {
             char line[32];
             if (session.head->values[i] < 1000) {
@@ -213,7 +210,6 @@ bool process_message(int session_id, const char message[]) {
 
     // Get the corresponding session
     // Hash_Insert(&session_list, session_id);
-    printf("hello there friends: %d\n", session_id);
     list_t session = Hash_Lookup(&session_list, session_id);
 
     if (is_str_numeric(token)) {
@@ -229,9 +225,6 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the operation symbol.
     token = strtok(NULL, " ");
-    printf("first: %f   token: %s\n", first_value, token);
-    // printf("session: %d\n", session.key);
-    printf("resultind: %d\n", result_idx);
     if (token == NULL) {
         // session_list[session_id].variables[result_idx] = true;
         // session_list[session_id].values[result_idx] = first_value;
@@ -265,8 +258,6 @@ bool process_message(int session_id, const char message[]) {
 
     // session_list[session_id].variables[result_idx] = true;
     session.head->variables[result_idx] = true;
-
-    printf("first: %f     second:%f", first_value, second_value);
 
     if (symbol == '+') {
         // session_list[session_id].values[result_idx] = first_value + second_value;
@@ -325,14 +316,11 @@ void load_all_sessions() {
         char path[BUFFER_LEN];
         char file_content[BUFFER_LEN];
         get_session_file_path(i, path);
-        // printf("Path: %s\n", path);
         FILE *in = fopen(path, "r");
         if (in != NULL){
-            printf("file found: %s\n", path);
             Hash_Insert(&session_list, i);
             while (fscanf(in, "%[^\n] ", file_content) != EOF){
                 process_message(i, file_content);
-                printf("session_id: %i .... data: %s \n", i, file_content);
             }
         }
     }
@@ -348,15 +336,9 @@ void save_session(int session_id) {
     // Hint: Use get_session_file_path() to get the file path for each session.
         char path[BUFFER_LEN];
         char result[BUFFER_LEN];
-        // for (int i = 0; i < NUM_VARIABLES; ++i) {
-        //     if (session_list[session_id].variables[i]) {
-        //         printf("%.6f   :   %i\n", session_list[session_id].values[i], i);
-        //     }
-        // }
         get_session_file_path(session_id, path);
         FILE *out = fopen(path, "w");
         session_to_str(session_id, result);
-        printf("result: %s\n", result);
         fputs(result, out);
         fclose(out);
 
@@ -455,7 +437,6 @@ void browser_handler(int browser_socket_fd) {
             continue;
         }
         bool data_valid = process_message(session_id, message);
-        printf("hi there\n");
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
             //continue;
@@ -614,7 +595,6 @@ list_t List_Lookup(list_t *L, int key) {
     pthread_mutex_lock(&L->lock);
     session_t *curr = L->head;
     while (curr) {
-        printf("current key: %d\n", curr->key);
         if (curr->key == key) {
             L->head = curr;
             break;
