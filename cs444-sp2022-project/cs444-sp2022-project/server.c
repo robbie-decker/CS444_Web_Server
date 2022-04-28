@@ -760,6 +760,103 @@ list_t List_Lookup(list_t *L, int key) {
 
 
 /**
+ * @brief Initialize hashmap
+ * 
+ * @param H pointer to hash struct
+ */
+void Hash_Init(hash_t *H) {
+    int i;
+    for (i = 0; i < NUM_SESSIONS; i++)
+        List_Init(&H->lists[i]);
+}
+
+/**
+ * @brief Insert into hashmap
+ * 
+ * @param H pointer to hash
+ * @param key key to store data (should be a session ID)
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void Hash_Insert(hash_t *H, int key) {
+    return List_Insert(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param H 
+ * @param key 
+ * @return session_t 
+ */
+list_t Hash_Lookup(hash_t *H, int key) {
+    return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ */
+void List_Init(list_t *L) {
+    L->head = NULL;
+    pthread_mutex_init(&L->lock, NULL);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @param in_use 
+ * @param variables 
+ * @param values 
+ */
+void List_Insert(list_t *L, int key) {
+    // synchronization not needed
+    session_t *new = malloc(sizeof(session_t));
+    if (new == NULL) {
+        perror("malloc");
+        return;
+    }
+
+    new->key = key;
+    // new->in_use = in_use;
+    // new->variables = variables;
+    // new->values = values;
+
+    // just lock critical section
+    pthread_mutex_lock(&L->lock);
+    new->next = L->head;
+    L->head = new;
+    pthread_mutex_unlock(&L->lock);
+}
+
+/**
+ * @brief 
+ * 
+ * @param L 
+ * @param key 
+ * @return session_t 
+ */
+list_t List_Lookup(list_t *L, int key) {
+    int rv = -1;
+    pthread_mutex_lock(&L->lock);
+    session_t *curr = L->head;
+    while (curr) {
+        if (curr->key == key) {
+            L->head = curr;
+            break;
+        }
+        curr = curr->next;
+    }
+    pthread_mutex_unlock(&L->lock);
+    return *L; // now both success and failure
+}
+
+
+/**
  * The main function for the server.
  *
  * @param argc the number of command-line arguments passed by the user
