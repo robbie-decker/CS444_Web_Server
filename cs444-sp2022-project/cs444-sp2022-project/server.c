@@ -394,43 +394,9 @@ int register_browser(int browser_socket_fd) {
 
 
     int session_id = strtol(message, NULL, 10);
-
-    if (session_id == -1) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        for (int i = 0; i < NUM_SESSIONS; ++i) {
-            if (!session_list[i].in_use) {
-                session_id = i;
-                pthread_mutex_lock(&session_list_mutex);
-                session_list[session_id].in_use = true;
-                pthread_mutex_unlock(&session_list_mutex);
-                break;
-            }
-        }
-    }
-            
-    pthread_mutex_lock(&browser_list_mutex);
-=======
-        bool generate_id = false;
-=======
->>>>>>> Change to session list over browser list
-        while(generate_id == false){
-=======
-        session_t session = Hash_Lookup(&session_list, session_id);
-=======
+    if (session_id == -1) {            
         list_t session = Hash_Lookup(&session_list, session_id);
->>>>>>> Working version of hashmap
-=======
-        list_t session = Hash_Lookup(&session_list, session_id);
->>>>>>> Working version of hashmap
         while(true){
->>>>>>> Partly working hashmap
             // Generate random number between 0 - 128
             session_id = (rand() % (NUM_SESSIONS + 1));
             // if(!session_list[session_id].in_use){
@@ -444,47 +410,6 @@ int register_browser(int browser_socket_fd) {
             sleep(1);
         }
     }
-<<<<<<< HEAD
-=======
-        bool generate_id = false;
-=======
->>>>>>> Change to session list over browser list
-        while(generate_id == false){
-=======
-        session_t session = Hash_Lookup(&session_list, session_id);
-        while(true){
->>>>>>> Partly working hashmap
-            // Generate random number between 0 - 128
-            session_id = (rand() % (NUM_SESSIONS + 1));
-            // if(!session_list[session_id].in_use){
-            //     session_list[session_id].in_use = true;
-            //     break;
-            // }
-            if(!session.head->in_use){
-                session.head->in_use = true;
-                break;
-            }
-            sleep(1);
-        }
-    }
-<<<<<<< HEAD
->>>>>>> Fixing generation to session list
-        // for (int i = 0; i < NUM_SESSIONS; ++i) {
-        //     if (!session_list[i].in_use) {
-        //         session_id = i;
-        //         session_list[session_id].in_use = true;
-        //         break;
-        //     }
-        // }
-    }
-<<<<<<< HEAD
->>>>>>> Fixing generation to session list
-=======
->>>>>>> Small changes to comments and add a sleep to rng
-=======
->>>>>>> Fixing generation to session list
-=======
->>>>>>> Small changes to comments and add a sleep to rng
     browser_list[browser_id].session_id = session_id;
     pthread_mutex_unlock(&browser_list_mutex);
     
@@ -842,20 +767,10 @@ list_t List_Lookup(list_t *L, int key) {
  * @return exit code
  */
 int main(int argc, char *argv[]) {
-    
-<<<<<<< 
-<<<<<<< HEAD
     // Set new seed and initialize hashmap
     srand(time(NULL));
     Hash_Init(&session_list);
-=======
-    srand(time(NULL));
->>>>>>> Generating random browser_id
-=======
-    // Set new seed and initialize hashmap
-    srand(time(NULL));
-    Hash_Init(&session_list);
->>>>>>> Partly working hashmap
+
     int port = DEFAULT_PORT;
 
     if (argc == 1) {
