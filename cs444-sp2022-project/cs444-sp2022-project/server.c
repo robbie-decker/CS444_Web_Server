@@ -202,6 +202,9 @@ bool process_message(int session_id, const char message[]) {
     }
     // altered to add length check (minimum length of a valid input is 5 ex: 'x = 1')
 
+
+    printf("hhahhahahaahaa\n");
+
     // Processes the result variable.
     token = strtok(data, " ");
     if (isalpha(token)){
@@ -334,10 +337,11 @@ void load_all_sessions() {
         char path[BUFFER_LEN];
         char file_content[BUFFER_LEN];
         get_session_file_path(i, path);
-        // printf("Path: %s\n", path);
+        printf("Path: %s\n", path);
         FILE *in = fopen(path, "r");
         if (in != NULL){
             Hash_Insert(&session_list, i);
+            printf("hi there\n");
             while (fscanf(in, "%[^\n] ", file_content) != EOF){
                 process_message(i, file_content);
             }
@@ -435,6 +439,8 @@ void browser_handler(int browser_socket_fd) {
     int socket_fd = browser_list[browser_id].socket_fd;
     int session_id = browser_list[browser_id].session_id;
 
+    list_t session = Hash_Lookup(&session_list, session_id);
+
     printf("Successfully accepted Browser #%d for Session #%d.\n", browser_id, session_id);
 
     while (true) {
@@ -459,7 +465,6 @@ void browser_handler(int browser_socket_fd) {
             continue;
         }
         bool data_valid = process_message(session_id, message);
-        printf("hi there\n");
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
             //continue;
@@ -481,16 +486,17 @@ void browser_handler(int browser_socket_fd) {
         	}
         }
         
-        if(session_list[session_id].variables[letter-97] == false)
+        if(session.head->variables[letter-97] == false)
         {
-        	session_list[session_id].variables[letter-97] = true;
+        	session.head->variables[letter-97] = true;
         }
         
         char *ptr;
         double numberDub = strtod(number, &ptr);
         
-        session_list[session_id].values[letter-97] = numberDub;
-        
+        // session_list[session_id].values[letter-97] = numberDub;
+        session.head->values[letter-97] = numberDub;
+
         session_to_str(session_id, response);
 
         broadcast(session_id, response);
@@ -506,6 +512,7 @@ void browser_handler(int browser_socket_fd) {
  */
 void start_server(int port) {
     // Loads every session if there exists one on the disk.
+    printf("hi there\n");
     load_all_sessions();
 
     // Creates the socket.
@@ -659,202 +666,6 @@ list_t List_Lookup(list_t *L, int key) {
     pthread_mutex_unlock(&L->lock);
     return *L; // now both success and failure
 }
-
-
-/**
- * @brief Initialize hashmap
- * 
- * @param H pointer to hash struct
- */
-void Hash_Init(hash_t *H) {
-    int i;
-    for (i = 0; i < NUM_SESSIONS; i++)
-        List_Init(&H->lists[i]);
-}
-
-/**
- * @brief Insert into hashmap
- * 
- * @param H pointer to hash
- * @param key key to store data (should be a session ID)
- * @param in_use 
- * @param variables 
- * @param values 
- */
-void Hash_Insert(hash_t *H, int key) {
-    return List_Insert(&H->lists[key % NUM_SESSIONS], key);
-}
-
-/**
- * @brief 
- * 
- * @param H 
- * @param key 
- * @return session_t 
- */
-list_t Hash_Lookup(hash_t *H, int key) {
-    return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- */
-void List_Init(list_t *L) {
-    L->head = NULL;
-    pthread_mutex_init(&L->lock, NULL);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- * @param key 
- * @param in_use 
- * @param variables 
- * @param values 
- */
-void List_Insert(list_t *L, int key) {
-    // synchronization not needed
-    session_t *new = malloc(sizeof(session_t));
-    if (new == NULL) {
-        perror("malloc");
-        return;
-    }
-
-    new->key = key;
-    // new->in_use = in_use;
-    // new->variables = variables;
-    // new->values = values;
-
-    // just lock critical section
-    pthread_mutex_lock(&L->lock);
-    new->next = L->head;
-    L->head = new;
-    pthread_mutex_unlock(&L->lock);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- * @param key 
- * @return session_t 
- */
-list_t List_Lookup(list_t *L, int key) {
-    int rv = -1;
-    pthread_mutex_lock(&L->lock);
-    session_t *curr = L->head;
-    while (curr) {
-        printf("current key: %d\n", curr->key);
-        if (curr->key == key) {
-            L->head = curr;
-            break;
-        }
-        curr = curr->next;
-    }
-    pthread_mutex_unlock(&L->lock);
-    return *L; // now both success and failure
-}
-
-
-/**
- * @brief Initialize hashmap
- * 
- * @param H pointer to hash struct
- */
-void Hash_Init(hash_t *H) {
-    int i;
-    for (i = 0; i < NUM_SESSIONS; i++)
-        List_Init(&H->lists[i]);
-}
-
-/**
- * @brief Insert into hashmap
- * 
- * @param H pointer to hash
- * @param key key to store data (should be a session ID)
- * @param in_use 
- * @param variables 
- * @param values 
- */
-void Hash_Insert(hash_t *H, int key) {
-    return List_Insert(&H->lists[key % NUM_SESSIONS], key);
-}
-
-/**
- * @brief 
- * 
- * @param H 
- * @param key 
- * @return session_t 
- */
-list_t Hash_Lookup(hash_t *H, int key) {
-    return List_Lookup(&H->lists[key % NUM_SESSIONS], key);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- */
-void List_Init(list_t *L) {
-    L->head = NULL;
-    pthread_mutex_init(&L->lock, NULL);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- * @param key 
- * @param in_use 
- * @param variables 
- * @param values 
- */
-void List_Insert(list_t *L, int key) {
-    // synchronization not needed
-    session_t *new = malloc(sizeof(session_t));
-    if (new == NULL) {
-        perror("malloc");
-        return;
-    }
-
-    new->key = key;
-    // new->in_use = in_use;
-    // new->variables = variables;
-    // new->values = values;
-
-    // just lock critical section
-    pthread_mutex_lock(&L->lock);
-    new->next = L->head;
-    L->head = new;
-    pthread_mutex_unlock(&L->lock);
-}
-
-/**
- * @brief 
- * 
- * @param L 
- * @param key 
- * @return session_t 
- */
-list_t List_Lookup(list_t *L, int key) {
-    int rv = -1;
-    pthread_mutex_lock(&L->lock);
-    session_t *curr = L->head;
-    while (curr) {
-        if (curr->key == key) {
-            L->head = curr;
-            break;
-        }
-        curr = curr->next;
-    }
-    pthread_mutex_unlock(&L->lock);
-    return *L; // now both success and failure
-}
-
 
 /**
  * The main function for the server.
