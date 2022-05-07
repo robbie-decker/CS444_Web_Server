@@ -204,7 +204,7 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes the result variable.
     token = strtok(data, " ");
-    if (isalpha(token)){
+    if (isalpha(token[0])){
         result_idx = token[0] - 'a';;
     }
     else {
@@ -215,7 +215,7 @@ bool process_message(int session_id, const char message[]) {
 
     // Processes "=".
     token = strtok(NULL, " ");
-    if (!strcmp(token,"=")){
+    if (strcmp(token,"=")!=0){
         return false;
     }
     // altered to ensure = sign is valid
@@ -229,7 +229,7 @@ bool process_message(int session_id, const char message[]) {
 
     if (is_str_numeric(token)) {
         first_value = strtod(token, NULL);
-    } else if (isalnum(!token)) {
+    } else if (isalnum(token) == 0) {
         return false;
     } else {
         int first_idx = token[0] - 'a';
@@ -256,10 +256,10 @@ bool process_message(int session_id, const char message[]) {
     token = strtok(NULL, " ");
     if (strcmp(token,"") == 0){
         return false;
+    } else if (isalnum(token)==0) {
+        return false;
     } else if (is_str_numeric(token)) {
         second_value = strtod(token, NULL);
-    } else if (isalnum(!token)) {
-        return false;
     } else {
         int second_idx = token[0] - 'a';
         // second_value = session_list[session_id].values[second_idx];
